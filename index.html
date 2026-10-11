@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>理论闯关 · 遗忘曲线刷题</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="home" class="view">
+  <div class="container">
+    <h1>理论闯关 · 刷题</h1>
+    <div class="sub">艾宾浩斯遗忘曲线 · 答对往后推，答错明天再见</div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-due">0</div><div class="lab">今日待复习</div></div>
+      <div class="stat"><div class="num" id="stat-new">0</div><div class="lab">新题可学</div></div>
+      <div class="stat"><div class="num" id="stat-master">0</div><div class="lab">已掌握</div></div>
+      <div class="stat"><div class="num" id="stat-streak">0</div><div class="lab">连续天数</div></div>
+    </div>
+    <div class="total" id="stat-total"></div>
+
+    <div class="row">
+      <label class="set-label">每日新题数
+        <input type="number" id="new-input" min="1" max="100" value="20">
+      </label>
+    </div>
+
+    <button id="start-btn" class="btn primary">开始今日任务</button>
+
+    <div class="tools">
+      <button id="export-btn" class="btn ghost">导出进度</button>
+      <button id="import-btn" class="btn ghost">导入进度</button>
+      <input type="file" id="import-file" accept="application/json" hidden>
+    </div>
+
+    <div class="hint">
+      单选：数字键 1–4 直接作答<br>
+      多选：数字键 1–4 勾选，回车提交<br>
+      答对后：回车=会了 · 空格=蒙的（没把握明天再见）
+    </div>
+
+    <div class="footer">题库 1143 题（单选 + 多选）· 进度自动保存在本机浏览器</div>
+  </div>
+</div>
+
+<!-- 答题页 -->
+<div id="quiz" class="view hidden">
+  <div class="container">
+    <div class="topbar">
+      <button id="back-home" class="btn ghost small">← 首页</button>
+      <span id="q-progress" class="progress"></span>
+    </div>
+    <div class="type" id="q-type"></div>
+    <div class="stem" id="q-stem"></div>
+    <div class="options" id="options"></div>
+    <button id="submit-btn" class="btn primary hidden">提交</button>
+    <div class="result hidden" id="q-result"></div>
+    <div class="mnemonic-box hidden" id="q-mnemonic-box">
+      <div class="mnemonic-title">💡 巧记</div>
+      <div class="mnemonic" id="q-mnemonic"></div>
+    </div>
+    <div class="grades">
+      <button id="grade-good" class="btn primary hidden">会了 · 前进</button>
+      <button id="grade-fuzzy" class="btn warn hidden">蒙的 · 明天再见</button>
+      <button id="grade-again" class="btn danger hidden">继续 · 明天再见</button>
+    </div>
+  </div>
+</div>
+
+<!-- 完成页 -->
+<div id="done" class="view hidden">
+  <div class="container">
+    <h1>🎉 今日任务完成</h1>
+    <div class="stats">
+      <div class="stat"><div class="num" id="done-master">0</div><div class="lab">已掌握</div></div>
+      <div class="stat"><div class="num" id="done-due">0</div><div class="lab">明日待复习</div></div>
+      <div class="stat"><div class="num" id="done-new">0</div><div class="lab">新题余量</div></div>
+    </div>
+    <button id="done-home" class="btn primary">回首页</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
