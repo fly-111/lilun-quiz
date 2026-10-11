@@ -94,7 +94,7 @@
     if (!q) { session.idx++; return renderQuiz(); }
 
     phase = "answering"; selection = new Set(); currentCorrect = false;
-    $("q-progress").textContent = "今日进度 " + session.done + "/" + session.list.length;
+    $("q-progress").textContent = "第 " + (session.idx + 1) + "/" + session.list.length + " 题";
     $("q-type").textContent = q.type === "single" ? "单选题" : "多选题（选所有正确项）";
     $("q-stem").textContent = q.stem;
     $("q-result").className = "result hidden";
@@ -107,24 +107,34 @@
 
     const opts = $("options");
     opts.innerHTML = "";
+    const itype = q.type === "single" ? "radio" : "checkbox";
     q.options.forEach((t, i) => {
-      const b = document.createElement("button");
+      const b = document.createElement("div");
       b.className = "opt";
-      b.innerHTML = '<span class="key">' + (i + 1) + "</span><span class=\"txt\">" + esc(t) + "</span>";
+      b.innerHTML = '<input type="' + itype + '" name="opt">'
+        + '<span class="letter">' + String.fromCharCode(65 + i) + "</span>"
+        + '<span class="txt">' + esc(t) + "</span>";
       b.onclick = () => onOption(i);
       opts.appendChild(b);
     });
     opts.dataset.multi = q.type === "multi" ? "1" : "";
   }
 
+  function syncMarks(sel) {
+    const btns = $("options").children;
+    for (let k = 0; k < btns.length; k++) {
+      const inp = btns[k].querySelector("input");
+      if (inp) inp.checked = sel.has(k);
+      btns[k].classList.toggle("selected", sel.has(k));
+    }
+  }
   function onOption(i) {
     if (phase !== "answering") return;
     const q = QMAP[session.list[session.idx]];
-    if (q.type === "single") { selection = new Set([i]); submit(); }
+    if (q.type === "single") { selection = new Set([i]); syncMarks(selection); submit(); }
     else {
       if (selection.has(i)) selection.delete(i); else selection.add(i);
-      const btns = $("options").children;
-      for (let k = 0; k < btns.length; k++) btns[k].classList.toggle("selected", selection.has(k));
+      syncMarks(selection);
     }
   }
 
@@ -138,9 +148,12 @@
     phase = "revealed";
 
     const btns = $("options").children;
-    q.answer.forEach((a) => { btns[a].classList.add("right"); });
-    if (!correct) selection.forEach((s) => btns[s].classList.add("wrong"));
-    else selection.forEach((s) => btns[s].classList.add("right"));
+    q.answer.forEach((a) => {
+      const inp = btns[a].querySelector("input");
+      if (inp) inp.checked = true;
+      btns[a].classList.add("right");
+    });
+    selection.forEach((s) => { if (!q.answer.includes(s)) btns[s].classList.add("wrong"); });
 
     const res = $("q-result");
     res.className = "result " + (correct ? "ok" : "bad");
@@ -187,12 +200,13 @@
     if ($("quiz").classList.contains("hidden")) return;
     const k = e.key;
     if (phase === "answering") {
-      if (/^[1-4]$/.test(k)) onOption(parseInt(k, 10) - 1);
-      else if (k === "Enter" && QMAP[session.list[session.idx]].type === "multi") submit();
+      if (/^[A-Da-d1-4]$/.test(k)) {
+        const ch = k.toUpperCase();
+        onOption(ch >= "A" && ch <= "D" ? ch.charCodeAt(0) - 65 : parseInt(ch, 10) - 1);
+      } else if (k === "Enter" && QMAP[session.list[session.idx]].type === "multi") submit();
     } else if (phase === "revealed") {
       if (k === "Enter") advance(currentCorrect ? "good" : "again");
       else if (k === " " && currentCorrect) { e.preventDefault(); advance("fuzzy"); }
-      else if (k === "2" && currentCorrect) advance("fuzzy");
     }
   });
 
