@@ -164,3 +164,47 @@ body {
 /* ---------- 完成页 ---------- */
 .done-title { text-align: center; font-size: 1.4rem; color: var(--darkred); margin: 16px 0 18px; }
 .done .stats { grid-template-columns: repeat(3, 1fr); }
+
+/* ---------- 专题按钮内嵌 ＋ / × ---------- */
+.tip { font-weight: 400; color: var(--muted); font-size: .72rem; }
+.topic-btn .tc { color: var(--muted); font-size: .72rem; }
+.topic-add2 { display: inline-block; margin-left: 6px; color: var(--red); font-weight: 700; padding: 0 2px; }
+.topic-add2:hover { color: var(--darkred); }
+.topic-del { display: inline-block; margin-left: 6px; color: #bbb; font-weight: 700; }
+.topic-del:hover { color: var(--bad); }
+
+/* ---------- 翻题导航 ---------- */
+.nav { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 4px; }
+.nav-spacer { flex: 1; text-align: center; color: var(--muted); font-size: .8rem; }
+.badge { display: inline-block; background: var(--okbg); color: var(--ok); font-size: .72rem; padding: 2px 8px; border-radius: 10px; }
+
+/* ---------- 错题排行榜 ---------- */
+.lb-overall { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .88rem; color: #555; margin-bottom: 14px; line-height: 1.8; }
+.lb-overall b { color: var(--red); }
+.lb-list { display: flex; flex-direction: column; gap: 6px; }
+.lb-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; cursor: pointer; }
+.lb-row:hover { border-color: var(--red); }
+.lb-rank { flex: 0 0 26px; text-align: center; font-weight: 700; color: var(--red); }
+.lb-stem { flex: 1; font-size: .86rem; color: #333; line-height: 1.4; }
+.lb-tag { flex: 0 0 auto; font-size: .68rem; color: var(--muted); background: #f2efe9; border-radius: 8px; padding: 1px 6px; }
+.lb-num { flex: 0 0 auto; font-size: .78rem; font-weight: 700; }
+.lb-num.wrong { color: var(--bad); }
+.lb-num.ok { color: var(--ok); }
+.empty { text-align: center; color: var(--muted); font-size: .88rem; padding: 30px 0; }
+
+/* ---------- 题库总览 / 加题 ---------- */
+.bank-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+.bank-bar input { flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 10px; font-size: .9rem; }
+.bank-bar select { padding: 9px; border: 1px solid #ccc; border-radius: 10px; font-size: .9rem; background: #fff; }
+.bank-list { display: flex; flex-direction: column; gap: 10px; }
+.qc { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.qc-single { border-left: 3px solid var(--accent); }
+.qc-multi { border-left: 3px solid var(--gold); }
+.qc-head { margin-bottom: 6px; }
+.qc-head .type { margin-right: 8px; }
+.qc-stem { font-size: .92rem; color: #1a1a1a; line-height: 1.6; }
+.qc-opts { margin-top: 4px; }
+.qc-opt { font-size: .85rem; color: #555; line-height: 1.7; padding-left: 2px; }
+.qc-opt .qc-l { color: var(--muted); font-weight: 700; margin-right: 4px; }
+.qc-opt.ans { color: var(--ok); font-weight: 700; }
+.qc-add { margin-top: 8px; text-align: right; }
