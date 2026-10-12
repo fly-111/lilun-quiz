@@ -1,6 +1,7 @@
 /* 理论闯关 · 遗忘曲线刷题 —— SM-2 精简版调度
  * 答对(会了) → 间隔按难度系数拉长；答对(蒙的) → 间隔归 1 天；答错 → 间隔归 1 天
  * 进度存 localStorage，纯静态可 GitHub Pages 部署
+ * 页面还原 WTS 做题场景：题干 → 选项文字列表(.wts-select-unit) → 答案区(.answerUnitViewBox)
  */
 (function () {
   "use strict";
@@ -10,19 +11,36 @@
   const LS_STATE = "lilun-quiz-state-v1";
   const LS_SETTINGS = "lilun-quiz-settings-v1";
   const LS_STREAK = "lilun-quiz-streak-v1";
+  const LS_TOPICS = "lilun-quiz-topics-v1";
 
   const QUESTIONS = (window.QUIZ_DATA && window.QUIZ_DATA.questions) || [];
   const QMAP = {};
   QUESTIONS.forEach((q) => { QMAP[q.id] = q; });
 
+  /* 预置专题：关键词（题干包含任一即匹配）或 re（正则） */
+  const TOPICS = [
+    { name: "…性 表述", re: /[一-龥]{1,4}性/, desc: "先进性 / 纯洁性 / 人民性 / 科学性 …" },
+    { name: "国际关系·外交", keywords: ["国际关系","外交","建交","大使","联合国","多边","单边","一带一路","命运共同体","全球","世界"] },
+    { name: "伙伴关系", keywords: ["伙伴关系","全天候","战略协作","全面战略","战略伙伴","战略互信","合作共赢","同盟"] },
+    { name: "中朝关系", keywords: ["中朝","朝鲜","朝中","抗美援朝"] },
+    { name: "全会·会议", keywords: ["二十大","二十届","全会","中央","人大","政协","代表大会"] },
+    { name: "国防·军队", keywords: ["国防","军队","军事","官兵","军人","战备","练兵","强军","战区"] },
+    { name: "经济·金融", keywords: ["经济","金融","货币","财政","产业","市场","就业","投资","消费"] },
+    { name: "法治·法律", keywords: ["法治","法律","宪法","立法","依法","司法","法规"] },
+    { name: "生态·环境", keywords: ["生态","环境","绿色","碳","植树","污染","环保","气候"] },
+    { name: "科技·创新", keywords: ["科技","创新","科学","技术","研发","人工智能","数字","芯片","人才"] }
+  ];
+
   function loadJSON(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
   let state = loadJSON(LS_STATE, {});
   let settings = Object.assign({ newPerDay: 20 }, loadJSON(LS_SETTINGS, {}));
   let streak = loadJSON(LS_STREAK, { days: 0, last: null });
+  let customTopics = loadJSON(LS_TOPICS, []);
 
   function saveState() { saveJSON(LS_STATE, state); }
   function card(qid) {
@@ -31,8 +49,18 @@
   }
   function newIds() { return QUESTIONS.filter((q) => !state[q.id]).map((q) => q.id); }
   function dueIds() { const now = Date.now(); return QUESTIONS.filter((q) => state[q.id] && state[q.id].due && state[q.id].due <= now).map((q) => q.id); }
+  function futureIds() { const now = Date.now(); return QUESTIONS.filter((q) => state[q.id] && state[q.id].due && state[q.id].due > now).map((q) => q.id); }
+  function weakIds() { return QUESTIONS.filter((q) => state[q.id] && state[q.id].lapses >= 2).map((q) => q.id); }
   function masteredCount() { return Object.values(state).filter((c) => c.interval >= MASTER_AT).length; }
   function learnedCount() { return Object.keys(state).length; }
+
+  /* ---------- 专题匹配 ---------- */
+  function matchTopic(q, t) {
+    if (t.re) return t.re.test(q.stem);
+    if (t.keywords && t.keywords.length) return t.keywords.some((k) => q.stem.indexOf(k) >= 0);
+    return false;
+  }
+  function topicIds(t) { return QUESTIONS.filter((q) => matchTopic(q, t)).map((q) => q.id); }
 
   /* ---------- 调度核心 ---------- */
   function grade(qid, g) { // g: 'good' | 'fuzzy' | 'again'
@@ -64,11 +92,17 @@
   }
 
   /* ---------- 会话 ---------- */
-  let session = null;   // { list: [qid...], idx, done }
-  function buildSession() {
-    const news = shuffle(newIds()).slice(0, settings.newPerDay);
-    const dues = shuffle(dueIds());
-    session = { list: news.concat(dues), idx: 0, done: 0 };
+  let session = null;   // { list: [qid...], idx, done, mode, arg }
+  function buildSession(mode, arg) {
+    let list;
+    if (mode === "topic") list = shuffle(topicIds(arg));
+    else if (mode === "weak") list = shuffle(weakIds());
+    else {
+      const news = shuffle(newIds()).slice(0, settings.newPerDay);
+      const dues = shuffle(dueIds());
+      list = news.concat(dues);
+    }
+    session = { list: list, idx: 0, done: 0, mode: mode || "normal", arg: arg || null };
   }
 
   /* ---------- 渲染 ---------- */
@@ -76,16 +110,41 @@
   let selection = new Set();
   let currentCorrect = false;
 
-  function show(id) { ["home", "quiz"].forEach((v) => $(v).classList.toggle("hidden", v !== id)); }
+  function show(id) { ["home", "quiz", "done"].forEach((v) => $(v).classList.toggle("hidden", v !== id)); }
 
   function renderHome() {
-    const dueN = dueIds().length, newN = newIds().length;
+    const dueN = dueIds().length, newN = newIds().length, weakN = weakIds().length;
     $("stat-due").textContent = dueN;
+    $("stat-tomorrow").textContent = futureIds().length;
     $("stat-new").textContent = Math.min(newN, settings.newPerDay);
     $("stat-master").textContent = masteredCount();
-    $("stat-streak").textContent = streak.days;
-    $("stat-total").textContent = QUESTIONS.length + " 题 · 已学 " + learnedCount();
+    $("stat-total").textContent = "已学 " + learnedCount() + " · 薄弱 " + weakN + " · 连续 " + streak.days + " 天";
+    $("foot-count").textContent = QUESTIONS.length;
     $("new-input").value = settings.newPerDay;
+    $("weak-btn").textContent = "薄弱题训练（错 ≥2 次 · " + weakN + " 道）";
+    renderTopics();
+  }
+
+  function renderTopics() {
+    const host = $("topic-list");
+    host.innerHTML = "";
+    TOPICS.concat(customTopics).forEach((t) => {
+      const n = topicIds(t).length;
+      const b = document.createElement("button");
+      b.className = "topic-btn";
+      b.textContent = t.name + " · " + n + " 题";
+      b.title = t.desc || t.keywords.join("、");
+      b.onclick = () => { buildSession("topic", t); startQuizView(); };
+      if (t.custom) {
+        const x = document.createElement("span");
+        x.className = "topic-del";
+        x.textContent = "×";
+        x.title = "删除专题";
+        x.onclick = (e) => { e.stopPropagation(); customTopics = customTopics.filter((c) => c !== t); saveJSON(LS_TOPICS, customTopics); renderHome(); };
+        b.appendChild(x);
+      }
+      host.appendChild(b);
+    });
   }
 
   function renderQuiz() {
@@ -95,7 +154,11 @@
 
     phase = "answering"; selection = new Set(); currentCorrect = false;
     $("q-progress").textContent = "第 " + (session.idx + 1) + "/" + session.list.length + " 题";
-    $("q-type").textContent = q.type === "single" ? "单选题" : "多选题（选所有正确项）";
+    $("q-order").textContent = session.idx + 1;
+    $("q-type").textContent = q.type === "single" ? "单选题" : "多选题";
+    const c = state[q.id];
+    $("q-hist").textContent = (c && c.seen) ? "对 " + c.right + " · 错 " + c.lapses : "";
+    $("q-hist").classList.toggle("hidden", !c || !c.seen);
     $("q-stem").textContent = q.stem;
     $("q-result").className = "result hidden";
     $("q-mnemonic").textContent = "";
@@ -105,27 +168,37 @@
     $("grade-fuzzy").classList.add("hidden");
     $("grade-again").classList.add("hidden");
 
-    const opts = $("options");
-    opts.innerHTML = "";
     const itype = q.type === "single" ? "radio" : "checkbox";
+
+    // 选项文字列表（.wts-select-unit）
+    const box = $("q-option-text");
+    box.innerHTML = "";
     q.options.forEach((t, i) => {
-      const b = document.createElement("div");
-      b.className = "opt";
-      b.innerHTML = '<input type="' + itype + '" name="opt">'
-        + '<span class="letter">' + String.fromCharCode(65 + i) + "</span>"
-        + '<span class="txt">' + esc(t) + "</span>";
-      b.onclick = () => onOption(i);
-      opts.appendChild(b);
+      const u = document.createElement("div");
+      u.className = "wts-select-unit";
+      u.innerHTML = '<div class="ltr">' + String.fromCharCode(65 + i) + '.</div><div class="otxt">' + esc(t) + "</div>";
+      u.onclick = () => onOption(i);
+      box.appendChild(u);
     });
-    opts.dataset.multi = q.type === "multi" ? "1" : "";
+
+    // 答案区（A B C D 横排 + 单选圆/多选方）
+    const ans = $("q-answer");
+    ans.innerHTML = "";
+    q.options.forEach((t, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = '<label><span class="altr">' + String.fromCharCode(65 + i) + '</span><input type="' + itype + '" name="ans"></label>';
+      li.onclick = () => onOption(i);
+      ans.appendChild(li);
+    });
   }
 
   function syncMarks(sel) {
-    const btns = $("options").children;
-    for (let k = 0; k < btns.length; k++) {
-      const inp = btns[k].querySelector("input");
+    const units = $("q-option-text").children;
+    const lis = $("q-answer").children;
+    for (let k = 0; k < units.length; k++) {
+      units[k].classList.toggle("selected", sel.has(k));
+      const inp = lis[k] && lis[k].querySelector("input");
       if (inp) inp.checked = sel.has(k);
-      btns[k].classList.toggle("selected", sel.has(k));
     }
   }
   function onOption(i) {
@@ -147,13 +220,9 @@
     currentCorrect = correct;
     phase = "revealed";
 
-    const btns = $("options").children;
-    q.answer.forEach((a) => {
-      const inp = btns[a].querySelector("input");
-      if (inp) inp.checked = true;
-      btns[a].classList.add("right");
-    });
-    selection.forEach((s) => { if (!q.answer.includes(s)) btns[s].classList.add("wrong"); });
+    const units = $("q-option-text").children;
+    q.answer.forEach((a) => units[a].classList.add("right"));
+    selection.forEach((s) => { if (!q.answer.includes(s)) units[s].classList.add("wrong"); });
 
     const res = $("q-result");
     res.className = "result " + (correct ? "ok" : "bad");
@@ -176,27 +245,28 @@
   }
 
   function renderDone() {
-    $("quiz").classList.add("hidden");
-    $("done").classList.remove("hidden");
+    show("done");
     $("done-master").textContent = masteredCount();
-    $("done-due").textContent = dueIds().length;
+    $("done-due").textContent = futureIds().length;
     $("done-new").textContent = Math.min(newIds().length, settings.newPerDay);
+  }
+
+  function startQuizView() {
+    if (session.list.length === 0) { renderDone(); return; }
+    show("quiz");
+    renderQuiz();
   }
 
   function startSession() {
     settings.newPerDay = Math.max(1, parseInt($("new-input").value, 10) || 20);
     saveJSON(LS_SETTINGS, settings);
-    buildSession();
-    if (session.list.length === 0) { renderDone(); return; }
-    $("done").classList.add("hidden");
-    $("quiz").classList.remove("hidden");
-    show("quiz");
-    renderQuiz();
+    buildSession("normal");
+    startQuizView();
   }
 
   /* ---------- 键盘 ---------- */
   document.addEventListener("keydown", (e) => {
-    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
     if ($("quiz").classList.contains("hidden")) return;
     const k = e.key;
     if (phase === "answering") {
@@ -212,7 +282,7 @@
 
   /* ---------- 导出 / 导入 ---------- */
   function exportJSON() {
-    const blob = new Blob([JSON.stringify({ state, settings, streak }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ state, settings, streak, customTopics }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "lilun-quiz-progress.json";
@@ -227,16 +297,16 @@
         if (d.state) { state = d.state; saveState(); }
         if (d.settings) { settings = Object.assign(settings, d.settings); saveJSON(LS_SETTINGS, settings); }
         if (d.streak) { streak = d.streak; saveJSON(LS_STREAK, streak); }
+        if (d.customTopics) { customTopics = d.customTopics; saveJSON(LS_TOPICS, customTopics); }
         renderHome();
       } catch (err) { alert("导入失败：文件格式不对"); }
     };
     r.readAsText(file);
   }
 
-  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-
   /* ---------- 事件绑定 ---------- */
   $("start-btn").onclick = startSession;
+  $("weak-btn").onclick = () => { buildSession("weak"); startQuizView(); };
   $("submit-btn").onclick = submit;
   $("grade-good").onclick = () => advance("good");
   $("grade-fuzzy").onclick = () => advance("fuzzy");
@@ -247,6 +317,19 @@
   $("import-btn").onclick = () => $("import-file").click();
   $("import-file").onchange = (e) => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ""; };
   $("new-input").onchange = () => { settings.newPerDay = Math.max(1, parseInt($("new-input").value, 10) || 20); saveJSON(LS_SETTINGS, settings); renderHome(); };
+
+  $("topic-add-btn").onclick = () => $("topic-form").classList.remove("hidden");
+  $("topic-cancel").onclick = () => { $("topic-form").classList.add("hidden"); $("topic-name").value = ""; $("topic-kw").value = ""; };
+  $("topic-save").onclick = () => {
+    const name = $("topic-name").value.trim();
+    const kws = $("topic-kw").value.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+    if (!name || !kws.length) { alert("请填写专题名称和至少一个关键词"); return; }
+    customTopics.push({ name: name, keywords: kws, custom: true });
+    saveJSON(LS_TOPICS, customTopics);
+    $("topic-form").classList.add("hidden");
+    $("topic-name").value = ""; $("topic-kw").value = "";
+    renderHome();
+  };
 
   /* ---------- 启动 ---------- */
   renderHome();

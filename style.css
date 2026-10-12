@@ -53,45 +53,106 @@ body {
 .btn { display: inline-block; border: none; border-radius: 22px; padding: 12px 20px; font-size: 1rem; cursor: pointer; transition: all .15s; }
 .btn.primary { background: var(--goldbg); color: var(--gold); font-weight: 700; width: 100%; box-shadow: 0 2px 8px rgba(146,86,0,.18); }
 .btn.primary:hover { background: #f0c488; }
-.btn.warn { background: #f0a04b; color: #fff; width: 100%; }
+.btn.warn { background: #f0a04b; color: #fff; width: 100%; margin-top: 10px; }
 .btn.danger { background: var(--red); color: #fff; width: 100%; }
 .btn.ghost { background: transparent; border: 1px solid #ccc; color: #666; }
-.btn.small { padding: 7px 12px; font-size: .85rem; }
+.btn.small { padding: 7px 14px; font-size: .85rem; width: auto; }
 
 .tools { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
 .hint { text-align: center; color: #a89f91; font-size: .75rem; line-height: 1.8; margin-top: 22px; }
 .footer { text-align: center; color: #c5bcae; font-size: .72rem; margin-top: 18px; }
 
+/* ---------- 专题训练 ---------- */
+.section-title { font-size: .95rem; font-weight: 700; color: var(--darkred); margin: 20px 0 10px; }
+.topic-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic-btn {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; color: #444;
+  padding: 7px 13px; font-size: .84rem; cursor: pointer; position: relative;
+}
+.topic-btn:hover { border-color: var(--red); color: var(--red); }
+.topic-del { display: inline-block; margin-left: 6px; color: #bbb; font-weight: 700; }
+.topic-del:hover { color: var(--bad); }
+.topic-add { margin-top: 10px; }
+.topic-form { margin-top: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.topic-form input { width: 100%; padding: 9px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 8px; font-size: .9rem; }
+
+/* ---------- 记忆机制说明 ---------- */
+.help { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-top: 18px; }
+.help summary { cursor: pointer; color: #666; font-size: .85rem; font-weight: 700; }
+.help-body { margin-top: 10px; font-size: .82rem; color: #555; line-height: 1.7; }
+
 /* ---------- 答题页 ---------- */
-.qhead { margin-bottom: 12px; }
+.qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .type { display: inline-block; background: #fbe9e9; color: var(--red); font-size: .78rem; padding: 3px 12px; border-radius: 12px; }
-.stem { font-size: 1.14rem; line-height: 1.75; color: #1a1a1a; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 14px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+.hist { color: var(--muted); font-size: .76rem; }
 
-.options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-.opt {
-  display: flex; align-items: center; gap: 12px; text-align: left;
-  background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
-  cursor: pointer; font-size: 1rem; transition: all .12s;
+/* 题目卡片（还原 .subjectUnitViewBox） */
+.subjectUnitViewBox {
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  border-radius: 4px;
+  padding: 10px;
+  padding-left: 40px;
+  margin: 4px;
+  margin-top: 30px;
+  margin-bottom: 18px;
+  font-size: 16px;
+  line-height: 32px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
-.opt:hover { border-color: var(--red); }
-.opt input[type="radio"], .opt input[type="checkbox"] {
-  width: 19px; height: 19px; flex: 0 0 19px; accent-color: var(--accent); cursor: pointer;
-  pointer-events: none;   /* 仅作视觉，点击交给 .opt 的 onclick */
+.subjectUnitViewBox:hover { border-color: var(--red); }
+
+/* 题号红标（还原 .subjectOrder） */
+.subjectOrder {
+  float: left;
+  margin-left: -58px;
+  margin-top: -2px;
+  background: var(--red);
+  color: #fff;
+  padding: 2px 12px;
+  line-height: 1.5;
+  font-size: 15px;
 }
-.opt .letter { flex: 0 0 24px; font-weight: 700; color: var(--muted); font-size: .9rem; }
-.opt .txt { line-height: 1.6; flex: 1; }
 
-/* 选中态：文字变红加粗（对齐 .wts-select-unit.selected） */
-.opt.selected { border-color: var(--red); background: #fdf4f4; }
-.opt.selected .letter, .opt.selected .txt { color: var(--red); font-weight: 700; }
+.stem-text { text-align: left; font-size: 1.02rem; line-height: 1.75; color: #1a1a1a; }
 
-/* 判题后：正确/错误 */
-.opt.right { border-color: var(--ok); background: var(--okbg); }
-.opt.right .letter, .opt.right .txt { color: var(--ok); font-weight: 700; }
-.opt.wrong { border-color: var(--bad); background: var(--badbg); }
-.opt.wrong .letter, .opt.wrong .txt { color: var(--bad); font-weight: 700; }
+/* 选项文字列表（还原 .subjectBox → .wts-select-unit） */
+.subjectBox { margin: 8px; }
+.wts-select-unit { cursor: pointer; clear: both; line-height: 32px; }
+.wts-select-unit .ltr { float: left; margin-left: -20px; color: #555; font-weight: 700; }
+.wts-select-unit .otxt { margin-left: 8px; color: #333; }
+.wts-select-unit:hover .otxt { color: var(--red); }
 
-.result { text-align: center; font-size: 1.15rem; font-weight: 700; padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+/* 选中态：选项文字变红加粗（对齐 .wts-select-unit.selected） */
+.wts-select-unit.selected .ltr,
+.wts-select-unit.selected .otxt { color: var(--red); font-weight: 700; }
+.wts-select-unit.right .ltr,
+.wts-select-unit.right .otxt { color: var(--ok); font-weight: 700; }
+.wts-select-unit.wrong .ltr,
+.wts-select-unit.wrong .otxt { color: var(--bad); font-weight: 700; text-decoration: line-through; }
+
+/* 答案区（还原 .answerUnitViewBox：虚线浅黄底 + A/B/C/D 横排） */
+.answerUnitViewBox {
+  font-size: 14px; line-height: 26px;
+  border: 1px dashed #d9c48a;
+  background: #fcf8e3;
+  border-radius: 6px;
+  padding: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.answerUnitViewBox ul { margin-left: -30px; }
+.answerUnitViewBox li { list-style: none; float: left; padding: 0 10px; margin: 4px; cursor: pointer; }
+.answerUnitViewBox label { cursor: pointer; }
+.answerUnitViewBox .altr { font-weight: 700; margin-right: 3px; }
+.answerUnitViewBox input[type="radio"],
+.answerUnitViewBox input[type="checkbox"] {
+  accent-color: var(--accent);
+  pointer-events: none;   /* 点击交给 li.onclick，避免原生转发吞真实鼠标事件 */
+  vertical-align: middle;
+}
+
+.result { text-align: center; font-size: 1.15rem; font-weight: 700; padding: 12px; border-radius: 10px; margin: 14px 0 12px; }
 .result.ok { background: var(--okbg); color: var(--ok); }
 .result.bad { background: var(--badbg); color: var(--bad); }
 
@@ -99,7 +160,8 @@ body {
 .mnemonic-title { color: #b8860b; font-size: .8rem; font-weight: 700; margin-bottom: 4px; }
 .mnemonic { color: #5a4a10; font-size: .95rem; line-height: 1.6; }
 
-.grades { display: flex; flex-direction: column; gap: 10px; }
+.grades { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 
 /* ---------- 完成页 ---------- */
 .done-title { text-align: center; font-size: 1.4rem; color: var(--darkred); margin: 16px 0 18px; }
+.done .stats { grid-template-columns: repeat(3, 1fr); }
