@@ -172,7 +172,7 @@
     $("q-result").className = "result hidden";
     $("q-mnemonic").textContent = "";
     $("q-mnemonic-box").classList.add("hidden");
-    $("submit-btn").classList.toggle("hidden", q.type === "single");
+    $("submit-btn").classList.remove("hidden");
     $("grade-good").classList.add("hidden");
     $("grade-fuzzy").classList.add("hidden");
     $("grade-again").classList.add("hidden");
@@ -213,7 +213,7 @@
   function onOption(i) {
     if (phase !== "answering") return;
     const q = QMAP[session.list[session.idx]];
-    if (q.type === "single") { selection = new Set([i]); syncMarks(selection); submit(); }
+    if (q.type === "single") { selection = new Set([i]); syncMarks(selection); }
     else {
       if (selection.has(i)) selection.delete(i); else selection.add(i);
       syncMarks(selection);
@@ -282,7 +282,7 @@
       if (/^[A-Da-d1-4]$/.test(k)) {
         const ch = k.toUpperCase();
         onOption(ch >= "A" && ch <= "D" ? ch.charCodeAt(0) - 65 : parseInt(ch, 10) - 1);
-      } else if (k === "Enter" && QMAP[session.list[session.idx]].type === "multi") submit();
+      } else if (k === "Enter") submit();
     } else if (phase === "revealed") {
       if (k === "Enter") advance(currentCorrect ? "good" : "again");
       else if (k === " " && currentCorrect) { e.preventDefault(); advance("fuzzy"); }
