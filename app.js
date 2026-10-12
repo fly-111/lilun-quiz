@@ -17,9 +17,12 @@
   const QMAP = {};
   QUESTIONS.forEach((q) => { QMAP[q.id] = q; });
 
-  /* 预置专题：关键词（题干包含任一即匹配）或 re（正则） */
+  /* 预置专题：suffix=按「选项」后缀归类（选词题）；keywords=题干/选项包含任一即匹配 */
   const TOPICS = [
-    { name: "…性 表述", re: /[一-龥]{1,4}性/, desc: "先进性 / 纯洁性 / 人民性 / 科学性 …" },
+    { name: "…性 选词", suffix: "性", desc: "选项是「先进性/纯洁性/人民性…」，选对/选全" },
+    { name: "…化 选词", suffix: "化", desc: "选项是「现代化/信息化/智能化/绿色化…」" },
+    { name: "…力 选词", suffix: "力", desc: "选项是「凝聚力/战斗力/创造力/引领力…」" },
+    { name: "…观 选词", suffix: "观", desc: "选项是「世界观/人生观/价值观/大局观…」" },
     { name: "国际关系·外交", keywords: ["国际关系","外交","建交","大使","联合国","多边","单边","一带一路","命运共同体","全球","世界"] },
     { name: "伙伴关系", keywords: ["伙伴关系","全天候","战略协作","全面战略","战略伙伴","战略互信","合作共赢","同盟"] },
     { name: "中朝关系", keywords: ["中朝","朝鲜","朝中","抗美援朝"] },
@@ -56,8 +59,14 @@
 
   /* ---------- 专题匹配 ---------- */
   function matchTopic(q, t) {
-    if (t.re) return t.re.test(q.stem);
-    if (t.keywords && t.keywords.length) return t.keywords.some((k) => q.stem.indexOf(k) >= 0);
+    if (t.suffix) {                       // 选词题：≥2 个选项以该后缀结尾
+      const re = new RegExp("[一-龥]{1,4}" + t.suffix + "$");
+      return q.options.filter((o) => re.test(o)).length >= 2;
+    }
+    if (t.keywords && t.keywords.length) {
+      const hay = q.stem + " " + q.options.join(" ");
+      return t.keywords.some((k) => hay.indexOf(k) >= 0);
+    }
     return false;
   }
   function topicIds(t) { return QUESTIONS.filter((q) => matchTopic(q, t)).map((q) => q.id); }
@@ -186,7 +195,7 @@
     ans.innerHTML = "";
     q.options.forEach((t, i) => {
       const li = document.createElement("li");
-      li.innerHTML = '<label><span class="altr">' + String.fromCharCode(65 + i) + '</span><input type="' + itype + '" name="ans"></label>';
+      li.innerHTML = '<span class="altr">' + String.fromCharCode(65 + i) + '</span><input type="' + itype + '" name="ans">';
       li.onclick = () => onOption(i);
       ans.appendChild(li);
     });
